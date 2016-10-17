@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <standard>
+                <active>1</active>
+                <title>EBANX - Payment methods for Brazil, Mexico and Peru</title>
+				<test_mode>1</test_mode>
+				<due_date>3</due_date>
+                <order_status>pending</order_status>
+                <payment_action>true</payment_action>
+                <model>Ebanx\Standard\Model\Paymentmethod\Standard</model>
+            </standard>
+        </payment>
+    </default>
+</config>
