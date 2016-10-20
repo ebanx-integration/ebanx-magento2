@@ -7,6 +7,21 @@ class Installment
 
     public function toOptionArray()
     {
+        $arr = array();
+
+        foreach ($this->_options as $n)
+        {
+            $arr[] = array(
+                'value' => $n
+              , 'label' => $n
+            );
+        }
+
+        return $arr;
+    }
+
+    public function instalmentWithRate()
+    {
         $arr = array(
             1 => array(
                 'interest_rate' => 1

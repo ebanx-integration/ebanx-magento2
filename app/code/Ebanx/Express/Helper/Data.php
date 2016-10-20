@@ -84,7 +84,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper {
 	public function calculateTotalWithInterest($orderTotal, $installment)
     {
         $helper = $this->_objectManager->create('\Ebanx\Express\Model\Config\Source\Installment');
-        $total = (floatval($helper->toOptionArray()[$installment]['interest_rate'] / 100) * floatval($orderTotal) + floatval($orderTotal));
+        $total = (floatval($helper->instalmentWithRate()[$installment]['interest_rate'] / 100) * floatval($orderTotal) + floatval($orderTotal));
 
         return $total;
      } 

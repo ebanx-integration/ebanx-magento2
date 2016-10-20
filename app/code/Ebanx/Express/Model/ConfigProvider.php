@@ -119,7 +119,7 @@ class ConfigProvider implements ConfigProviderInterface
 				$config['payment'][$code]['months'] = $this->getMonths();
 				$config['payment'][$code]['icons'] = $this->getIcons($code);
                 $config['payment'][$code]['installments'] = $this->getInstallments($code);
-				$config['payment'][$code]['installments_fees'] = $helper->toOptionArray();
+				$config['payment'][$code]['installments_fees'] = $helper->instalmentWithRate();
 				$config['payment'][$code]['installments_active'] = $this->getInstallmentsActive();
 				$config['payment'][$code]['cpf'] = $this->getEbanxCpf($code);
 				$config['payment'][$code]['birth_date'] = $this->getBirthDate($code);
