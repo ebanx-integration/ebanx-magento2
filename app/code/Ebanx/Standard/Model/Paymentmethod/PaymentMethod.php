@@ -13,16 +13,16 @@ class PaymentMethod extends AbstractMethod
 	protected $_canVoid            = true;
 	protected $_canCancel          = true;
 	protected $secretKey = null;
-	
+
     public function initialize($paymentAction, $stateObject)
     {
-		$payment = $this->getInfoInstance(); 
+		$payment = $this->getInfoInstance();
         $order = $payment->getOrder();
         $order->setCanSendNewEmailFlag(false);
     }
-	
+
     public function startTransaction(Order $order)
-	{	
+	{
 		$payment = $order->getPayment();
 		$method = $order->getPayment()->getMethod();
 		$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
@@ -30,14 +30,14 @@ class PaymentMethod extends AbstractMethod
 		$methodSeceKey = $objectManager->get('Magento\Framework\App\Config\ScopeConfigInterface')->getValue('payment/'.$method.'/secret_key');
 		$this->secretKey = $objectManager->get('\Magento\Framework\Encryption\EncryptorInterface')->decrypt($methodSeceKey);
 		$amount = $order->getGrandTotal();
-		
+
 		if (empty($this->secretKey)) {
            throw new \Magento\Framework\Validator\Exception(__('Invalid Key for authorization.'));
-        } 
+        }
 		if ($amount <= 0) {
            throw new \Magento\Framework\Validator\Exception(__('Invalid amount for authorization.'));
-        } 
-		
+        }
+
 		$amount = number_format(round($amount), 2, '.', '');
 		$quoteId = $order->getQuoteId();
 		$quote = $objectManager->get('Magento\Quote\Model\Quote');
@@ -65,14 +65,19 @@ class PaymentMethod extends AbstractMethod
 		$email = $order->getCustomerEmail() ?: $order->getBillingAddress()->getEmail();
 		$streetNumber = preg_replace('/[\D]/', '', $order->getBillingAddress()->getData('street'));
 		$streetNumber = ($streetNumber > 0) ? $streetNumber : '1';
-		
-		//Due Date use for Print of order 
+
+		//Due Date use for Print of order
 		$dueDays = $objectManager->get('Magento\Framework\App\Config\ScopeConfigInterface')->getValue('payment/'.$method.'/due_date');
 		$dueDate = date('d/m/Y', strtotime('+' . intval($dueDays).'days'));
-		
-		$params = [];		
+
+		if (!$order->getCustomerFirstname()) {
+				$customerName = $order->getBillingAddress()->getName();
+		} else {
+				$customerName = $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname();
+		}
+		$params = [];
 		$params = array(
-			  'name'              => $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname()
+			  'name'              => $customerName
 			, 'email'             => $email
 			, 'phone_number'      => $order->getBillingAddress()->getTelephone()
 			, 'currency_code'     => $currencyCode
@@ -95,7 +100,7 @@ class PaymentMethod extends AbstractMethod
 
 			if (!empty($response) && $response->status == 'SUCCESS')
 			{
-				
+
 				$hash = $response->payment->hash;
 				$payment->setTransactionId($hash)
 						->setIsTransactionClosed(0);
@@ -110,7 +115,7 @@ class PaymentMethod extends AbstractMethod
 				$transaction->setData('merchant_payment_code', $response->payment->merchant_payment_code);
 				$transaction->setData('amount', $response->payment->amount_ext);
 				$transaction->save();
-				
+
 				// Redirect to bank page if the client chose TEF
 				if (isset($response->redirect_url))
 				{
@@ -123,8 +128,8 @@ class PaymentMethod extends AbstractMethod
 				 $redirectUrl2 = $this->getUrl('checkout/onepage/success') . '?hash=' . $hash;
 				  return $redirectUrl2;
 				}
-				
-			} else 
+
+			} else
 			{
 				$paym = 'Authorizing order [' . $order->getIncrementId() . '] - error: ' . $response->status_message;
 				$writer = new \Zend\Log\Writer\Stream(BP . '/var/log/payment.log');
@@ -138,7 +143,7 @@ class PaymentMethod extends AbstractMethod
 			$this->debugData(['exception' => $e->getMessage()]);
 		}
     }
-	
+
 	public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
 	{
 	  $hash = $payment->getParentTransactionId();
@@ -151,7 +156,7 @@ class PaymentMethod extends AbstractMethod
 		->setShouldCloseParentTransaction(1);
 		return $this;
 	}
-	
+
 	public function void(\Magento\Payment\Model\InfoInterface $payment)
 	{
       parent::void($payment);
@@ -264,5 +269,5 @@ class PaymentMethod extends AbstractMethod
       }
 
       return 'Ocorreu um erro desconhecido. Por favor contacte o administrador.';
-  } 
+  }
 }

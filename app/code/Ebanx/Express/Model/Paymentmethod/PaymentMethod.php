@@ -19,7 +19,7 @@ class PaymentMethod extends AbstractMethod
 	  protected $_canUseForMultishipping = false;
 	  protected $_secretKey = null;
 	  protected $_testMode =null;
-	
+
 	public function assignData(\Magento\Framework\DataObject $data)
 	 {
 		parent::assignData($data);
@@ -30,7 +30,7 @@ class PaymentMethod extends AbstractMethod
 		}
 		return $this;
 	 }
-	
+
 	public function validate()
     {
 		$Key = $this->getConfigData('secret_key');
@@ -40,20 +40,20 @@ class PaymentMethod extends AbstractMethod
 		$this->_testMode = $this->getConfigData('test_mode');
         return $this;
     }
-	
+
     public function authorize(\Magento\Payment\Model\InfoInterface $payment, $amount)
-    {	
+    {
 		parent::authorize($payment, $amount);
-		
+
         $order = $payment->getOrder();
 		try
 		 {
 		$method = $order->getPayment()->getMethod();
-		
+
 		if ($amount <= 0) {
            throw new \Magento\Framework\Validator\Exception(__('Invalid amount for authorization.'));
-        } 
-		
+        }
+
 		$amount = number_format(round($amount), 2, '.', '');
 		$quoteId = $order->getQuoteId();
 		$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
@@ -68,7 +68,7 @@ class PaymentMethod extends AbstractMethod
 		  }
 		// On guest checkout, get billing email address
 		$email = $order->getCustomerEmail() ?: $order->getBillingAddress()->getEmail();
-		
+
 		// Gets the currency code and total
 		// Backend/base currency
 		if ($objectManager->get('Magento\Framework\App\Config\ScopeConfigInterface')->getValue('payment/'.$method.'/payment_currency') == 'base')
@@ -82,11 +82,11 @@ class PaymentMethod extends AbstractMethod
 		  $amountTotal  = $order->getGrandTotal();
 		  $currencyCode = $order->getOrderCurrency()->getCurrencyCode();
 		}
-		
+
 		// Street number workaround
 		$streetNumber = preg_replace('/[\D]/', '', $order->getBillingAddress()->getData('street'));
 		$streetNumber = ($streetNumber > 0) ? $streetNumber : '1';
-		
+
 		$state = $order->getBillingAddress()->getRegionCode();
 		if (strlen($state) > 2)
 		{
@@ -94,12 +94,17 @@ class PaymentMethod extends AbstractMethod
 		}
 		$bdy = $this->getInfoInstance()->getAdditionalInformation('birth_date');
 
+		if (!$order->getCustomerFirstname()) {
+				$customerName = $order->getBillingAddress()->getName();
+		} else {
+				$customerName = $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname();
+		}
 		$params = [];
 		$params = array(
 			  'mode'      => 'full'
 			, 'operation' => 'request'
 			, 'payment'   => array(
-				  'name'              => $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname()
+				  'name'              => $customerName
 				, 'document'          => $this->getInfoInstance()->getAdditionalInformation('cpf')
 				, 'birth_date'        => $bdy
 				, 'email'             => $email
@@ -115,7 +120,7 @@ class PaymentMethod extends AbstractMethod
 				, 'street_number'     => $streetNumber
 				, 'city'              => $order->getBillingAddress()->getData('city')
 				, 'state'             => $state
-				, 'country'           => $order->getBillingAddress()->getCountryId() 
+				, 'country'           => $order->getBillingAddress()->getCountryId()
 				, 'creditcard'        => array(
 					'card_number'   => $this->getInfoInstance()->getAdditionalInformation('cc_number'),
 					'card_name'     => $this->getInfoInstance()->getAdditionalInformation('cc_name'),
@@ -123,8 +128,8 @@ class PaymentMethod extends AbstractMethod
 					'card_cvv'      => $this->getInfoInstance()->getAdditionalInformation('cc_cvv')
 				)
 			)
-		  ); 
-		  
+		  );
+
 		   $helper = $objectManager->create('\Ebanx\Express\Helper\Data');
 		   $installments = $this->getInfoInstance()->getAdditionalInformation('installments');
 		  if (isset($installments))
@@ -136,13 +141,13 @@ class PaymentMethod extends AbstractMethod
 			  $params['payment']['amount_total'] = $valorFinal;
 			}
 		  }
-		
+
 			$response = $helper->request($params);
 			if (!empty($response) && $response->status == 'SUCCESS')
 			{
 				// set Response detail in Ebanx table
 				if(!empty($response->payment->hash))
-				{	
+				{
 					$payment->setTransactionId($response->payment->hash)
 							->setIsTransactionClosed(0);
 					$transaction = $objectManager->create('Ebanx\Standard\Model\Transaction');
@@ -177,7 +182,7 @@ class PaymentMethod extends AbstractMethod
 		}
 		return $this;
     }
-	
+
 	public function refund(\Magento\Payment\Model\InfoInterface $payment, $amount)
 	{
 	  $hash = $payment->getParentTransactionId();
@@ -208,7 +213,7 @@ class PaymentMethod extends AbstractMethod
 	{
       return $this->void($payment);
 	}
-	
+
 	protected function getEbanxErrorMessage($errorCode)
 	{
       $errors = array(
