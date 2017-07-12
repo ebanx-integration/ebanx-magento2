@@ -92,6 +92,7 @@ class PaymentMethod extends AbstractMethod
 			, 'city'              => $order->getBillingAddress()->getData('city')
 			, 'state'             => $order->getBillingAddress()->getRegionCode()
 			, 'country'           => $order->getBillingAddress()->getCountryId()
+			, 'instalments'				=> '1-12'
 		);
 		try
 		{
